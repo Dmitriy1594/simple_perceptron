@@ -1,4 +1,26 @@
 from numpy import exp, array, random, dot, tanh
+import csv
+import os
+import shutil
+
+def data_to_scv(path_with_name, data):
+    with open(f'{path_with_name}', 'w', newline='') as csvfile:
+        fieldnames = ['epoch', 'w', 'y', 'sum_errors']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for d in data:
+            writer.writerow(d)
+
+def createFolder(directory):
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        shutil.rmtree(directory, ignore_errors=True)
+        os.makedirs(directory)
+    except OSError:
+        print('Error: Creating directory. ' + directory)
 
 
 class Perceptron():
@@ -43,6 +65,11 @@ class Perceptron():
         if self.mod is None:
             self.mod = 1
 
+        path = "./analyse"
+        createFolder(path)
+        # fieldnames = ['epoch', 'w', 'y', 'sum_errors']
+        data = []
+
         print("Training:\n")
 
         output = None
@@ -50,6 +77,8 @@ class Perceptron():
         adjustment = None
 
         for iteration in range(number_of_training_iterations):
+            d = {}
+            d['epoch'] = iteration
 
             if self.mod == 1:   # BINARY_STEP
                 # Pass the training set through our neural network (a single neuron).
@@ -83,7 +112,15 @@ class Perceptron():
                 adjustment = dot(training_set_inputs.T, nu * error * self.__sigmoid_derivative(output))
                 self.synaptic_weights += adjustment
 
+            d['w'] = [x[0] for x in self.synaptic_weights]
+            d['y'] = [x[0] for x in output]
+            d['sum_errors'] = sum(error.T[0])
+            data.append(d)
             print('>epoch=%d, lrate=%.3f, error=%.3f\n' % (iteration, nu, sum(error.T[0])))
+
+
+        path_with_name = f"{path}/{self.mod}.csv"
+        data_to_scv(path_with_name, data)
 
     # The neural network thinks.
     def think(self, inputs):
@@ -207,7 +244,8 @@ def big_test(mod=None, epoch=None, nu=None):
 
 
 if __name__ == "__main__":
-    big_test(mod=1, epoch=6, nu=0.2)
+    # simple_test(mod=1, epoch=4, nu=0.3)
+    big_test(mod=2, epoch=10, nu=0.1)
     #BINARY_STEP: big_test(mod=1, epoch=6, nu=0.2) # -> 87.5%/12.5%
     #TANH: big_test(mod=2, epoch=10, nu=0.1) # -> 93.75%/6.25%
     #Sigmoid: big_test(mod=3, epoch=51, nu=0.1) # -> 93.75%/6.25%
