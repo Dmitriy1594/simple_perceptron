@@ -126,13 +126,16 @@ class Perceptron():
     def think(self, inputs):
         # Pass inputs through our neural network (our single neuron).
         if self.mod == 1:
-            return self.__binary_step(dot(inputs, self.synaptic_weights))
+            net = dot(inputs, self.synaptic_weights)
+            return self.__binary_step(net)
 
         elif self.mod == 2:
-            return self.__tanh(dot(inputs, self.synaptic_weights))
+            net = dot(inputs, self.synaptic_weights)
+            return self.__tanh(net)
 
         elif self.mod == 3:
-            return self.__sigmoid(dot(inputs, self.synaptic_weights))
+            net = dot(inputs, self.synaptic_weights)
+            return self.__sigmoid(net)
 
 
 def simple_test(mod=None, arr=None, epoch=None, nu=None):
