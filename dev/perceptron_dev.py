@@ -24,8 +24,9 @@ def createFolder(directory):
 
 
 class Perceptron():
-    def __init__(self, mod=None):
+    def __init__(self, mod=None, data_to_scv=True):
         self.mod = mod
+        self.data_to_scv = data_to_scv
 
         # Seed the random number generator, so it generates the same numbers
         # every time the program runs.
@@ -35,6 +36,14 @@ class Perceptron():
         # We assign random weights to a 4 x 1 matrix, with values in the range -1 to 1
         # and mean 0.
         self.synaptic_weights = 2 * random.random((4, 1)) - 1
+        # print()
+
+        if self.data_to_scv is True:
+            # fieldnames = ['epoch', 'w', 'y', 'sum_errors']
+            self.data = []
+            self.path = "../analyse"
+            createFolder(self.path)
+
 
     # The Sigmoid function, which describes an S shaped curve.
     # We pass the weighted sum of the inputs through this function to
@@ -65,11 +74,6 @@ class Perceptron():
         if self.mod is None:
             self.mod = 1
 
-        path = "./analyse"
-        createFolder(path)
-        # fieldnames = ['epoch', 'w', 'y', 'sum_errors']
-        data = []
-
         print("Training:\n")
 
         output = None
@@ -77,9 +81,6 @@ class Perceptron():
         adjustment = None
 
         for iteration in range(number_of_training_iterations):
-            d = {}
-            d['epoch'] = iteration
-
             if self.mod == 1:   # BINARY_STEP
                 # Pass the training set through our neural network (a single neuron).
                 output = self.think(training_set_inputs)
@@ -112,15 +113,22 @@ class Perceptron():
                 adjustment = dot(training_set_inputs.T, nu * error * self.__sigmoid_derivative(output))
                 self.synaptic_weights += adjustment
 
-            d['w'] = [x[0] for x in self.synaptic_weights]
-            d['y'] = [x[0] for x in output]
-            d['sum_errors'] = sum(error.T[0])
-            data.append(d)
-            print('>epoch=%d, lrate=%.3f, error=%.3f\n' % (iteration, nu, sum(error.T[0])))
 
+            if self.data_to_scv is True:
+                d = {}
+                d['epoch'] = iteration
+                d['w'] = [x[0] for x in self.synaptic_weights]
+                d['y'] = [x[0] for x in output]
+                d['sum_errors'] = sum(error.T[0])
+                self.data.append(d)
+                print('>epoch=%d, lrate=%.3f, error=%.3f\n' % (iteration, nu, sum(error.T[0])))
 
-        path_with_name = f"{path}/{self.mod}.csv"
-        data_to_scv(path_with_name, data)
+    def load_data_to_csv(self):
+        if self.data_to_scv is True:
+            path_with_name = f"{self.path}/{self.mod}.csv"
+            data_to_scv(path_with_name, self.data)
+        else:
+            print("WARNING: data_to_scv is False\n")
 
     # The neural network thinks.
     def think(self, inputs):
@@ -196,6 +204,7 @@ def big_test(mod=None, epoch=None, nu=None):
 
     training_set_outputs = array([[0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1]]).T
     neural_network.train(training_set_inputs, training_set_outputs, epoch, nu)
+    neural_network.load_data_to_csv()
 
     # Test
     test_set_inputs = array([
