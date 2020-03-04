@@ -41,7 +41,7 @@ class Perceptron():
         if self.data_to_scv is True:
             # fieldnames = ['epoch', 'w', 'y', 'sum_errors']
             self.data = []
-            self.path = "../analyse"
+            self.path = "analyse"
             createFolder(self.path)
 
 
