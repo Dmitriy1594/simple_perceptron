@@ -3,6 +3,7 @@ import os
 import shutil
 import random
 from math import tanh, cos
+import itertools
 
 def data_to_scv(path_with_name, data):
     with open(f'{path_with_name}', 'w', newline='') as csvfile:
