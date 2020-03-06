@@ -1,358 +1,195 @@
 from release.perceptron_lib import *
 
+def write_min(combination, outputFile, W):
+    file = open(outputFile, 'w')
+    file.write('set:\n')
+    for i,x in enumerate(combination[1]):
+        file.write('X(' + str(i+1) + ') = (' + str(x[0])[4:-1] + ')')
+        file.write('\n')
+    file.write('\n')
 
-class Perceptron():
-    def __init__(self, path_to_save_file, data_to_scv=True):
-        self.data_to_scv = data_to_scv
+    nu = 0.3
+    E = 1
+    k = -1
 
-        self.synaptic_weights = [0, 0, 0, 0, 0]
-        # self.synaptic_weights = [random.uniform(-1.0, 1.0) for i in range(5)]
-        self.nu = 0.3
+    arrayE = list()
+    arrayK = list()
 
-        if self.data_to_scv is True:
-            self.data = []
-            self.path = path_to_save_file
-            createFolder(self.path)
+    Y = list()
 
-    def __binary_step(self, x):
-        scale = lambda x: 0 if x < 0 else 1
-        return scale(x)
+    F = [i[1] for i in combination[1]]
 
-    def __tanh(self, net):
-        return (1/2)*(tanh(net) + 1)
+    while E != 0:
+        k += 1
 
-    def __tanh_derivative(self, tanh_x):
-        return  1 - (1 / (2 * (cos(tanh_x)**2)))
+        prev_W = list(W)
 
-    def round(self, x):
-        if x >= 0.5:
-            return 1
-        elif x < 0.5:
-            return 0
+        for (x, f) in combination[1]:
+            n = net(W, x)
 
+            y = think(n)
+            Y.append(y)
 
-    def hamming(self, input_y, output_aim):
-        E = 0
-        for (y, f) in zip(input_y, output_aim):
-            if y != f:
-                E += 1
-        return E
-        # return sum([x for x in list(map(lambda x: x[0]+x[1], list(zip(input_y, output_aim)))) if x == 1])
-        # arr = list(map(lambda x: self.round(x[0])+x[1], list(zip(input_y, output_aim))))
-        # ar = [x for x in arr]
-        # return sum(ar)
+            d = delta(f, y)
 
-    def delta_weight(self, error, xi):
-        return self.nu * error * self.__tanh_derivative(xi) * xi
+        E = totalError(Y, F)
 
-    def train(self, training_set_inputs, training_set_outputs):
-        training_set_input = training_set_inputs.copy()
+        write_Data(file, k, Y, prev_W, E)
 
-        print("Training:\n")
+        Y = list()
 
-        # k - эпоха обучения
-        k = int()
-        y = int()
-        error = int()
-        ek = None
+        if E != 0:
+            for (x,f) in combination[1]:
+                n = net(W, x)
 
+                y = think(n)
 
-        while ek != 0:
+                d = delta(f, y)
 
-            output_y = []
+                W = recount_W(W, x, d, n, nu)
 
-            # l - шаг обучения
-            for l in range(len(training_set_input)):
+        arrayK.append(k)
+        arrayE.append(E)
 
-                y = self.think(training_set_input[l])
-                y_out = self.round(y)
-                # y = self.round(self.think(training_set_input[l]))
+    drawGraph(arrayE, arrayK, outputFile)
 
-                output_y.append(y_out)
+def check_combination(W, combination):
+    nu = 0.3
+    E = 1
+    k = -1
 
-                error = training_set_outputs[l] - y_out
+    Y = list()
 
-                x14 = training_set_input[l]
-                x04 = [1] + x14
+    epochs = 200
+    while E != 0 and k < epochs:
+        k += 1
 
-                for it in range(len(x04)):
-                    delta = self.delta_weight(error, x04[it])
-                    self.synaptic_weights[it] += delta
+        e = 0
 
-            ek = self.hamming(output_y, training_set_outputs)
+        prev_W = list(W)
 
-            if self.data_to_scv is True:
-                d = {}
-                d['k'] = k
-                d['w'] = self.synaptic_weights.copy()
-                d['y'] = output_y
-                d['E'] = ek
-                self.data.append(d)
-                print(f'>epoch={k}, weights={self.synaptic_weights}, E={ek}\n')
+        for (x, f) in combination:
+            n = net(W, x)
 
-            k += 1
+            y = think(n)
 
-    def train_random(self, training_set_inputs, training_set_outputs):
-        training_set_input = training_set_inputs.copy()
-        vectors = list(zip(training_set_input, training_set_outputs))
+            d = delta(f, y)
 
-        print("Training:\n")
+            if d != 0:
+                e += 1
 
-        # k - эпоха обучения
-        k = int()
-        y = int()
-        error = int()
-        ek = None
+        if e != 0:
+            e = 0
+            for (x,f) in combination:
+                n = net(W, x)
 
-        while ek != 0:
+                y = think(n)
 
-            output_y = []
+                d = delta(f, y)
 
-            # l - шаг обучения
-            for l in range(len(vectors)):
+                if d != 0:
+                    e += 1
 
-                y = self.think(vectors[l][0])
+                W = recount_W(W, x, d, n, nu)
+        E = e
+    if k < epochs:
+        return W, k
+    else:
+        return W, -1
 
-                output_y.append(y)
+def find_min_vector_tanh(inputW, inputF, outputFile):
+    best_combination = None
+    X = bin_generation(4)
 
-                error = vectors[l][1] - y
+    for i in range(2**4, 2, -1):
+        combinations = list(itertools.combinations(zip(X, inputF), i))
 
-                x14 = vectors[l][0]
-                x04 = [1] + x14
+        arrayKN = list()
 
-                for it in range(len(x04)):
-                    delta = self.delta_weight(error, x04[it])
-                    self.synaptic_weights[it] += delta
+        for combination in combinations:
 
-            ek = self.hamming(output_y, training_set_outputs)
+            Y = list()
 
-            if self.data_to_scv is True:
-                d = {}
-                d['k'] = k
-                d['w'] = self.synaptic_weights.copy()
-                d['y'] = output_y
-                d['E'] = ek
-                self.data.append(d)
-                print(f'>epoch={k}, weights={self.synaptic_weights}, E={ek}\n')
+            W, k = check_combination(list(inputW), combination)
 
-            k += 1
-            random.seed(1)
-            vectors = random.sample(vectors, len(vectors))
+            if k != -1:
 
-    def load_data_to_csv(self):
-        if self.data_to_scv is True:
-            path_with_name = f"{self.path}/step.csv"
-            data_to_scv(path_with_name, self.data)
-        else:
-            print("WARNING: data_to_scv is False\n")
+                for (x, f) in zip(X, inputF):
+                    n = net(W, x)
+                    y = think(n)
+                    Y.append(y)
 
-    # The neural network thinks.
-    def think(self, inputs):
-        net = sum(list(map(lambda x: x[0]*x[1], list(zip(inputs, self.synaptic_weights[1:])))))
-        net += self.synaptic_weights[0]
-        return self.__tanh(net)
+                E = totalError(Y, inputF)
 
+                if E == 0:
+                    arrayKN.append((k, combination, W))
+                    best_combination = sorted(arrayKN, key = lambda education: education[0])[0]
+
+    write_min(best_combination, outputFile, list(inputW))
+
+def train(W, F, outputFile):
+    X = bin_generation(4)
+    nu = 0.3
+    E = 1
+    k = -1
+
+    arrayE = list()
+    arrayK = list()
+    Y = list()
+
+    file = open(outputFile, 'w')
+
+    while E != 0:
+        k += 1
+
+        prev_W = list(W)
+
+        for (x, f) in zip(X, F):
+            n = net(W, x)
+
+            y = think(n)
+            Y.append(y)
+
+            d = delta(f, y)
+
+        E = totalError(Y, F)
+
+        write_Data(file, k, Y, prev_W, E)
+
+        Y = list()
+
+        if E != 0:
+
+            for (x,f) in zip(X, F):
+
+                n = net(W, x)
+
+                y = think(n)
+
+                d = delta(f, y)
+
+                W = recount_W(W, x, d, n, nu)
+
+        arrayK.append(k)
+        arrayE.append(E)
+        # drawGraph(arrayE, arrayK, outputFile)
+
+def train_tanh():
+    outputFile = "tanh"
+
+    W = [0, 0, 0, 0, 0]
+    F = [0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1]
+
+    train(W, F, outputFile + '_logistics')
 
 def find_min_vector():
-    training_set_inputs = [
-        [0, 0, 0, 0],
-        [0, 0, 0, 1],
-        [0, 0, 1, 0],
-        [0, 0, 1, 1],
-        [0, 1, 0, 0],
-        [0, 1, 0, 1],
-        [0, 1, 1, 0],
-        [0, 1, 1, 1],
-        [1, 0, 0, 0],
-        [1, 0, 0, 1],
-        [1, 0, 1, 0],
-        [1, 0, 1, 1],
-        [1, 1, 0, 0],
-        [1, 1, 0, 1],
-        [1, 1, 1, 0],
-        [1, 1, 1, 1],
-    ]
+    outputFile = "find_min_vector_tanh"
 
-    training_set_outputs = [0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1]
+    W = [0, 0, 0, 0, 0]
+    F = [0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1]
 
-    # Создание зависимостей
-    vectors = list(zip(training_set_inputs, training_set_outputs))
+    find_min_vector_tanh(W, F, outputFile + '_logistics')
 
-    for i in range(3):
-        vectors.pop()
-
-    # Перетасовка векторов
-    vectors = random.sample(vectors, len(vectors))
-
-    training_set_inputs = [x[0] for x in vectors]
-    training_set_outputs = [x[1] for x in vectors]
-
-    neural_network = Perceptron("./find_min_vector_tanh")
-    neural_network.train(training_set_inputs, training_set_outputs)
-    neural_network.load_data_to_csv()
-    print(f"New synaptic weights after training: {neural_network.synaptic_weights}\n")
-
-    # for it in range(1,16):
-    #
-    #
-    #     if it == 5:
-    #         break
-    #
-    #     # random.seed(1)
-    #     # arr_inputs = random.sample(training_set_inputs, len(training_set_inputs))
-    #     # arr_inputs = arr_inputs[it:]
-    #     print()
-    #
-    #     neural_network = Perceptron("./find_min_vector_step")
-    #     print(f"Random starting synaptic weights: {neural_network.synaptic_weights}\n")
-    #
-    #     training_set_outputs = [0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1]
-    #     # training_set_outputs = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0]
-    #     neural_network.train(training_set_inputs[it:], training_set_outputs)
-    #     # neural_network.train_random(training_set_inputs, training_set_outputs)
-    #     neural_network.load_data_to_csv()
-    #     print(f"New synaptic weights after training: {neural_network.synaptic_weights}\n")
-
-    # Test
-
-    test_set_inputs = [
-        [0, 0, 0, 0],
-        [0, 0, 0, 1],
-        [0, 0, 1, 0],
-        [0, 0, 1, 1],
-        [0, 1, 0, 0],
-        [0, 1, 0, 1],
-        [0, 1, 1, 0],
-        [0, 1, 1, 1],
-        [1, 0, 0, 0],
-        [1, 0, 0, 1],
-        [1, 0, 1, 0],
-        [1, 0, 1, 1],
-        [1, 1, 0, 0],
-        [1, 1, 0, 1],
-        [1, 1, 1, 0],
-        [1, 1, 1, 1],
-    ]
-
-    tset_set_outputs = [0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1]
-    # tset_set_outputs = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0]
-
-    accurency = 0
-    errors = 0
-
-    for i in range(len(test_set_inputs)):
-        if neural_network.think(test_set_inputs[i]) == tset_set_outputs[i]:
-            accurency += 1
-        else:
-            errors += 1
-
-    print(f"Accurency: {accurency * 100 / 16}%\nErrors: {errors * 100 / 16}%\n")
-
-def run_app(arr=None):
-    neural_network = Perceptron("./analyse_tanh")
-    print(f"Random starting synaptic weights: {neural_network.synaptic_weights}\n")
-
-    training_set_inputs = [
-        [0, 0, 0, 0],
-        [0, 0, 0, 1],
-        [0, 0, 1, 0],
-        [0, 0, 1, 1],
-        [0, 1, 0, 0],
-        [0, 1, 0, 1],
-        [0, 1, 1, 0],
-        [0, 1, 1, 1],
-        [1, 0, 0, 0],
-        [1, 0, 0, 1],
-        [1, 0, 1, 0],
-        [1, 0, 1, 1],
-        [1, 1, 0, 0],
-        [1, 1, 0, 1],
-        [1, 1, 1, 0],
-        [1, 1, 1, 1],
-    ]
-
-    if arr is None:
-        arr = random.choice(training_set_inputs)
-
-    training_set_outputs = [0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1]
-    # training_set_outputs = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0]
-    neural_network.train(training_set_inputs, training_set_outputs)
-    # neural_network.train_random(training_set_inputs, training_set_outputs)
-    neural_network.load_data_to_csv()
-    print(f"New synaptic weights after training: {neural_network.synaptic_weights}\n")
-    print(f"Considering new situation {arr} -> {neural_network.think(arr)}\n")
-
-    # Test
-    test_set_inputs = [
-        [0, 0, 0, 0],
-        [0, 0, 0, 1],
-        [0, 0, 1, 0],
-        [0, 0, 1, 1],
-        [0, 1, 0, 0],
-        [0, 1, 0, 1],
-        [0, 1, 1, 0],
-        [0, 1, 1, 1],
-        [1, 0, 0, 0],
-        [1, 0, 0, 1],
-        [1, 0, 1, 0],
-        [1, 0, 1, 1],
-        [1, 1, 0, 0],
-        [1, 1, 0, 1],
-        [1, 1, 1, 0],
-        [1, 1, 1, 1],
-    ]
-
-    tset_set_outputs = [0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1]
-    # tset_set_outputs = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0]
-
-    accurency = 0
-    errors = 0
-
-    for i in range(len(test_set_inputs)):
-        if neural_network.think(test_set_inputs[i]) == tset_set_outputs[i]:
-            accurency += 1
-        else:
-            errors += 1
-
-    print(f"Accurency: {accurency * 100 / 16}%\nErrors: {errors * 100 / 16}%\n")
-
-
-
-
-if __name__ == "__main__":
-    run_app()
-    # find_min_vector()
-
-"""
-    training_set_inputs = array([
-        [0, 0, 0, 0],
-        [0, 0, 0, 1],
-        [0, 0, 1, 0],
-        [0, 0, 1, 1],
-        [0, 1, 0, 0],
-        [0, 1, 0, 1],
-        [0, 1, 1, 0],
-        [0, 1, 1, 1],
-        [1, 0, 0, 0],
-        [1, 0, 0, 1],
-        [1, 0, 1, 0],
-        [1, 0, 1, 1],
-        [1, 1, 0, 0],
-        [1, 1, 0, 1],
-        [1, 1, 1, 0],
-        [1, 1, 1, 1],
-    ])
-
-    training_set_outputs = array([[0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1]]).T
-
-    LINKS:
-    https://machinelearningmastery.com/implement-perceptron-algorithm-scratch-python/
-    https://pythonmachinelearning.pro/perceptrons-the-first-neural-networks/
-    https://towardsdatascience.com/perceptron-and-its-implementation-in-python-f87d6c7aa428
-    https://medium.com/@thomascountz/19-line-line-by-line-python-perceptron-b6f113b161f3
-    https://ru.wikipedia.org/wiki/%D0%94%D0%B5%D0%BB%D1%8C%D1%82%D0%B0-%D0%BF%D1%80%D0%B0%D0%B2%D0%B8%D0%BB%D0%BE
-    https://neurohive.io/ru/tutorial/prostaja-nejronnaja-set-python/
-    https://python-scripts.com/intro-to-neural-networks
-    https://medium.com/@omkar.nallagoni/activation-functions-with-derivative-and-python-code-sigmoid-vs-tanh-vs-relu-44d23915c1f4
-    https://towardsdatascience.com/implementing-different-activation-functions-and-weight-initialization-methods-using-python-c78643b9f20f
-"""
+if __name__ == '__main__':
+    # train_tanh()
+    find_min_vector()

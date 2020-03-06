@@ -2,7 +2,8 @@ from release.perceptron_lib import *
 
 
 class Perceptron():
-    def __init__(self, path_to_save_file, data_to_scv=True):
+    def __init__(self, path_to_save_file, mod=1, data_to_scv=True):
+        self.mod = mod
         self.data_to_scv = data_to_scv
 
         self.synaptic_weights = [0, 0, 0, 0, 0]
@@ -17,7 +18,7 @@ class Perceptron():
         scale = lambda x: 0 if x < 0 else 1
         return scale(x)
 
-    def round(self, x):
+    def __round(self, x):
         if x >= 0.5:
             return 1
         elif x < 0.5:
@@ -27,7 +28,8 @@ class Perceptron():
         return (1/2)*(tanh(net) + 1)
 
     def __tanh_derivative(self, tanh_x):
-        return  1 - (1 / (2 * (cos(tanh_x)**2)))
+        der = 1 - (1 / (2 * (cos(tanh_x)**2)))
+        return  der
 
     def __hamming(self, input_y, output_aim):
         # return sum([x for x in list(map(lambda x: x[0]+x[1], list(zip(input_y, output_aim)))) if x == 1])
@@ -38,7 +40,10 @@ class Perceptron():
         return E
 
     def __delta_weight(self, error, xi):
-        return self.nu * error * xi
+        if self.mod == 1:
+            return self.nu * error * xi
+        else:
+            return self.nu * error * self.__tanh_derivative(xi) * xi
 
     def train(self, training_set_inputs, training_set_outputs):
         training_set_input = training_set_inputs.copy()
@@ -56,7 +61,7 @@ class Perceptron():
 
             output_y = []
 
-            # 1 получаем реальный выход нейрона
+            # l - шаг обучения
             for l in range(len(training_set_input)):
 
                 y = self.think(training_set_input[l])
@@ -76,18 +81,19 @@ class Perceptron():
 
             # 2 обновление весов
             # l - шаг обучения
-            for l in range(len(training_set_input)):
+            if E != 0:
+                for l in range(len(training_set_input)):
 
-                y = self.think(training_set_input[l])
+                    y = self.think(training_set_input[l])
 
-                error = training_set_outputs[l] - y
+                    error = training_set_outputs[l] - y
 
-                x14 = training_set_input[l]
-                x04 = [1] + x14
+                    x14 = training_set_input[l]
+                    x04 = [1] + x14
 
-                for it in range(len(x04)):
-                    delta = self.__delta_weight(error, x04[it])
-                    self.synaptic_weights[it] += delta
+                    for it in range(len(x04)):
+                        delta = self.__delta_weight(error, x04[it])
+                        self.synaptic_weights[it] += delta
 
             k += 1
 
@@ -145,10 +151,31 @@ class Perceptron():
         else:
             print("WARNING: data_to_scv is False\n")
 
-    def think(self, inputs):
-        net = sum(list(map(lambda x: x[0]*x[1], list(zip(inputs, self.synaptic_weights[1:])))))
+    def actual_NN(self, net):
+        if net > 0:
+            return 1
+        else:
+            return 0
+
+    def net(self, X):
+        net = 0
+        for (w, x) in zip(self.synaptic_weights[1:], X):
+            net += w * x
         net += self.synaptic_weights[0]
-        return self.__binary_step(net)
+        return net
+
+    def think(self, inputs):
+        # net = sum(list(map(lambda x: x[0] * x[1], list(zip(inputs, self.synaptic_weights[1:])))))
+        # net += self.synaptic_weights[0]
+
+        net = self.net(inputs)
+
+        if self.mod == 1:
+            return self.__binary_step(net)
+        else:
+            # f = self.__tanh(net)
+            # return self.__round(f)
+            return self.actual_NN(net)
 
     def __check_combination(self, combination):
         E = 1
@@ -227,10 +254,7 @@ class Perceptron():
         print(best_combination)
 
 
-def run_app(arr=None):
-    neural_network = Perceptron("./analyse_step")
-    print(f"Random starting synaptic weights: {neural_network.synaptic_weights}\n")
-
+def run_app(arr=None, mod=None):
     training_set_inputs = [
         [0, 0, 0, 0],
         [0, 0, 0, 1],
@@ -253,7 +277,13 @@ def run_app(arr=None):
     if arr is None:
         arr = random.choice(training_set_inputs)
 
+    if mod is None:
+        mod = 1
+
     training_set_outputs = [0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1]
+
+    neural_network = Perceptron("./analyse_step", mod)
+    print(f"Random starting synaptic weights: {neural_network.synaptic_weights}\n")
     # training_set_outputs = [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0]
     neural_network.train(training_set_inputs, training_set_outputs)
     # neural_network.train_random(training_set_inputs, training_set_outputs)
@@ -295,8 +325,11 @@ def run_app(arr=None):
 
     print(f"Accurency: {accurency * 100 / 16}%\nErrors: {errors * 100 / 16}%\n")
 
-def find_min_vector_step():
-    neural_network = Perceptron("./find_min_vector_step")
+def find_min_vector_step(mod=None):
+    if mod is None:
+        mod = 1
+
+    neural_network = Perceptron("./find_min_vector_step", mod)
 
     training_set_inputs = [
         [0, 0, 0, 0],
@@ -323,8 +356,8 @@ def find_min_vector_step():
 
 
 if __name__ == "__main__":
-    run_app()
-    # find_min_vector_step()
+    # run_app(mod=1)
+    find_min_vector_step()
 
 """
     training_set_inputs = array([
