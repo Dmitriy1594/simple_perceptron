@@ -137,9 +137,13 @@ def train(W, F, outputFile):
     arrayK = list()
     Y = list()
 
+    data = []
+
     file = open(outputFile, 'w')
 
     while E != 0:
+        data_d = {}
+
         k += 1
 
         prev_W = list(W)
@@ -155,6 +159,12 @@ def train(W, F, outputFile):
         E = totalError(Y, F)
 
         write_Data(file, k, Y, prev_W, E)
+
+        data_d['k'] = k
+        data_d['w'] = prev_W
+        data_d['y'] = Y
+        data_d['E'] = E
+        data.append(data_d)
 
         Y = list()
 
@@ -172,7 +182,14 @@ def train(W, F, outputFile):
 
         arrayK.append(k)
         arrayE.append(E)
-        # drawGraph(arrayE, arrayK, outputFile)
+
+    drawGraph(arrayE, arrayK, outputFile)
+    load_data_to_csv('./analyse_step', data)
+
+def load_data_to_csv(path, data):
+    # fieldnames = ['k', 'w', 'y', 'E']
+    path_with_name = f"{path}/step_tanh.csv"
+    data_to_scv(path_with_name, data)
 
 def train_tanh():
     outputFile = "tanh"
