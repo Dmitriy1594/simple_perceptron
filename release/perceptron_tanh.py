@@ -191,5 +191,5 @@ def find_min_vector():
     find_min_vector_tanh(W, F, outputFile + '_logistics')
 
 if __name__ == '__main__':
-    # train_tanh()
-    find_min_vector()
+    train_tanh()
+    # find_min_vector()

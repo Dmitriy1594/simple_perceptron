@@ -97,53 +97,6 @@ class Perceptron():
 
             k += 1
 
-    # def train_random(self, training_set_inputs, training_set_outputs):
-    #     training_set_input = training_set_inputs.copy()
-    #     vectors = list(zip(training_set_input, training_set_outputs))
-    #
-    #     print("Training:\n")
-    #
-    #     # k - эпоха обучения
-    #     k = int()
-    #     y = int()
-    #     error = int()
-    #     ek = None
-    #
-    #     while ek != 0:
-    #
-    #         output_y = []
-    #
-    #         # l - шаг обучения
-    #         for l in range(len(vectors)):
-    #
-    #             y = self.think(vectors[l][0])
-    #
-    #             output_y.append(y)
-    #
-    #             error = vectors[l][1] - y
-    #
-    #             x14 = vectors[l][0]
-    #             x04 = [1] + x14
-    #
-    #             for it in range(len(x04)):
-    #                 delta = self.delta_weight(error, x04[it])
-    #                 self.synaptic_weights[it] += delta
-    #
-    #         ek = self.hamming(output_y, training_set_outputs)
-    #
-    #         if self.data_to_scv is True:
-    #             d = {}
-    #             d['k'] = k
-    #             d['w'] = self.synaptic_weights.copy()
-    #             d['y'] = output_y
-    #             d['E'] = ek
-    #             self.data.append(d)
-    #             print(f'>epoch={k}, weights={self.synaptic_weights}, E={ek}\n')
-    #
-    #         k += 1
-    #         random.seed(1)
-    #         vectors = random.sample(vectors, len(vectors))
-
     def load_data_to_csv(self):
         if self.data_to_scv is True:
             path_with_name = f"{self.path}/step.csv"
@@ -289,7 +242,7 @@ def run_app(arr=None, mod=None):
     # neural_network.train_random(training_set_inputs, training_set_outputs)
     neural_network.load_data_to_csv()
     print(f"New synaptic weights after training: {neural_network.synaptic_weights}\n")
-    print(f"Considering new situation {arr} -> {neural_network.think(arr)}\n")
+    # print(f"Considering new situation {arr} -> {neural_network.think(arr)}\n")
 
     # Test
     test_set_inputs = [
@@ -356,8 +309,8 @@ def find_min_vector_step(mod=None):
 
 
 if __name__ == "__main__":
-    # run_app(mod=1)
-    find_min_vector_step()
+    run_app(mod=1)
+    # find_min_vector_step()
 
 """
     training_set_inputs = array([
